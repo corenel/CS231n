@@ -34,13 +34,18 @@ def svm_loss_naive(W, X, y, reg):
       margin = scores[j] - correct_class_score + 1 # note delta = 1
       if margin > 0:
         loss += margin
+        dW[:, y[i]] -= X[i, :].T # geradient with respect to the row of W that corresponds to the correct class
+        dW[:, j] += X[i, :].T # gradient for the other rows where j != y_i
+
 
   # Right now the loss is a sum over all training examples, but we want it
   # to be an average instead so we divide by num_train.
   loss /= num_train
+  dW /= num_train
 
   # Add regularization to the loss.
   loss += 0.5 * reg * np.sum(W * W)
+  dW += reg * W
 
   #############################################################################
   # TODO:                                                                     #
@@ -69,7 +74,13 @@ def svm_loss_vectorized(W, X, y, reg):
   # Implement a vectorized version of the structured SVM loss, storing the    #
   # result in loss.                                                           #
   #############################################################################
-  pass
+
+  num_train = X.shape[0]
+  scores = X.dot(W)
+  margins = np.maximum(0, scores - scores[np.arange(num_train), y][:, np.newaxis]+ 1)
+  margins[np.arange(num_train), y] = 0
+  loss = np.sum(margins) / num_train + 0.5 * reg * np.sum(W * W)
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -84,7 +95,15 @@ def svm_loss_vectorized(W, X, y, reg):
   # to reuse some of the intermediate values that you used to compute the     #
   # loss.                                                                     #
   #############################################################################
-  pass
+     
+  X_mask = np.zeros(margins.shape)
+  # gradient for the other rows where j != y_i
+  X_mask[margins > 0] = 1
+  # geradient with respect to the row of W that corresponds to the correct class
+  num_incorrect_class = np.sum(X_mask, axis=1)
+  X_mask[np.arange(num_train), y] = -num_incorrect_class
+
+  dW = X.T.dot(X_mask) / num_train + reg * W
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
