@@ -117,3 +117,49 @@ def conv_relu_pool_backward(dout, cache):
   da = relu_backward(ds, relu_cache)
   dx, dw, db = conv_backward_fast(da, conv_cache)
   return dx, dw, db
+
+
+def conv_batchnorm_relu_pool_forward(x, w, b, conv_param, gamma, beta, bn_param, pool_param):
+  """
+  Forward pass for the conv-bn-relu-pool convenience layer
+  """
+  out, conv_cache = conv_forward_fast(x, w, b, conv_param)
+  out, batchnorm_cache = spatial_batchnorm_forward(out, gamma, beta, bn_param)
+  out, relu_cache = relu_forward(out)
+  out, maxpool_cache = max_pool_forward_fast(out, pool_param)
+  cache = (conv_cache, batchnorm_cache, relu_cache, maxpool_cache)
+  return out, cache
+
+
+def conv_batchnorm_relu_pool_backward(dout, cache):
+  """
+  Backward pass for the conv-bn-relu-pool convenience layer
+  """
+  conv_cache, batchnorm_cache, relu_cache, maxpool_cache = cache
+  dout = max_pool_backward_fast(dout, maxpool_cache)
+  dout = relu_backward(dout, relu_cache)
+  dout, dgamma, dbeta = spatial_batchnorm_backward(dout, batchnorm_cache)
+  dx, dw, db = conv_backward_fast(dout, conv_cache)
+  return dx, dw, db, dgamma, dbeta
+
+
+def conv_batchnorm_relu_forward(x, w, b, conv_param, gamma, beta, bn_param):
+  """
+  Forward pass for the conv-bn-relu convenience layer
+  """
+  out, conv_cache = conv_forward_fast(x, w, b, conv_param)
+  out, batchnorm_cache = spatial_batchnorm_forward(out, gamma, beta, bn_param)
+  out, relu_cache = relu_forward(out)
+  cache = (conv_cache, batchnorm_cache, relu_cache)
+  return out, cache
+
+
+def conv_batchnorm_relu_backward(dout, cache):
+  """
+  Backward pass for the conv-bn-relu convenience layer
+  """
+  conv_cache, batchnorm_cache, relu_cache = cache
+  dout = relu_backward(dout, relu_cache)
+  dout, dgamma, dbeta = spatial_batchnorm_backward(dout, batchnorm_cache)
+  dx, dw, db = conv_backward_fast(dout, conv_cache)
+  return dx, dw, db, dgamma, dbeta
